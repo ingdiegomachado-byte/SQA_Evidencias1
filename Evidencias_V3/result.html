@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Visor de Evidencias</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #ffffff; font-family: 'Segoe UI', sans-serif; }
+
+    /* ── VISTAS ── */
+    #viewer-view, #history-view, #editor-view {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #ffffff;
+      transition: opacity 0.25s ease;
+      z-index: 1;
+      visibility: hidden;
+      pointer-events: none;
+      opacity: 0;
+    }
+    
+    .view-hidden {
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+    .hidden { display: none !important; }
+    
+    .view-visible {
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      z-index: 2 !important;
+    }
+
+    /* ── HEADER BAR ── */
+    .header-bar { background: #003060; color: white; padding: 0 20px; min-height: 64px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex-shrink: 0; }
+    .brand-container { display: flex; align-items: center; margin-left: 15px; }
+    .brand-logo { height: 42px; width: auto; object-fit: contain; }
+    .brand-text { font-size: 20px; color: #fff; font-weight: 700; margin-left: 12px; line-height: 1; }
+    #viewer-info-bar { 
+      background: #060b29; 
+      color: #ffffff; 
+      padding: 8px 24px; 
+      font-size: 13px; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.15); 
+      font-family: 'Segoe UI', sans-serif !important; 
+      width: 100%; 
+      flex-shrink: 0;
+      box-shadow: inset 0 -2px 10px rgba(0,0,0,0.2);
+    }
+    #viewerStatus { color: #d1d9e6; font-weight: 500; }
+    /* ── VISOR ── */
+    .main-content { flex-grow: 1; display: flex; overflow: auto; background: #E8F0FE; padding: 20px; position: relative; }
+    .img-container { margin: auto; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; border-radius: 4px; transition: transform 0.2s ease; }
+    img#screenshot { display: block; max-width: 100%; max-height: 85vh; cursor: zoom-in; }
+    body.zoom-active .main-content { overflow: auto; }
+    body.zoom-active .img-container { box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+    body.zoom-active img#screenshot { max-width: none; max-height: none; width: auto; cursor: zoom-out; }
+
+    /* ── BOTONES HEADER VISOR ── */
+    .btn-action { background: transparent; color: #003060; border: 1px solid #0051ba; padding: 7px 18px; border-radius: 4px; cursor: pointer; font-weight: 700; margin-left: 8px; font-size: 13px; transition: all 0.15s; text-align: center; }
+    .btn-action:hover { background: rgba(0, 51, 186, 0.08); border-color: #0051ba; }
+    .btn-action:disabled, .btn-edit:disabled, .btn-danger:disabled, .btn-help-circle:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-edit { background: transparent; color: #fca311; border: 1px solid #fca311; padding: 7px 18px; border-radius: 4px; cursor: pointer; font-weight: 700; margin-left: 8px; font-size: 13px; transition: all 0.15s; text-align: center; }
+    .btn-edit:hover:not(:disabled) { background: rgba(252, 163, 17, 0.08); border-color: #fca311; }
+    .header-bar .btn-action,
+    .header-bar .btn-edit,
+    .header-bar .btn-danger { color: #ffffff; }
+    .history-link { margin-left: 32px; font-size: 13px !important; color: #e0e0e0 !important; cursor: pointer; font-family: 'Segoe UI', sans-serif !important; text-decoration: none !important; user-select: none; display: flex; align-items: center; gap: 6px; border: 0 !important; background: none; box-shadow: none; }
+    .history-link:hover { color: #fff !important; }
+
+    /* ── TOAST ── */
+    #toast { 
+      position: fixed; 
+      top: 20px; 
+      left: 50%; 
+      transform: translateX(-50%) translateY(-100px); 
+      background: #003060; 
+      color: white; 
+      padding: 12px 25px; 
+      border-radius: 8px; 
+      font-weight: 600; 
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+      z-index: 9999; 
+      opacity: 0; 
+      pointer-events: none; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-left: 5px solid #ff6b00;
+    }
+    #toast.show { 
+      transform: translateX(-50%) translateY(10px); 
+      opacity: 1; 
+    }
+    #toast.error {
+      background: #dc3545;
+      border-left-color: #721c24;
+    }
+    #toast.info {
+      background: #003060;
+      border-left-color: #fca311;
+    }
+    #toast.success {
+      background: #003060;
+      border-left-color: #28a745;
+    }
+    /* ── DROP ZONE ── */
+    #drop-zone-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 48, 96, 0.2);
+      border: 4px dashed #003060;
+      z-index: 10001;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    #drop-zone-overlay.active {
+      display: flex;
+    }
+    .drop-message {
+      background: white;
+      padding: 20px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      font-size: 18px;
+      font-weight: 600;
+      color: #003060;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    /* ── DIALOGO ── */
+    .confirm-overlay { position: fixed; inset: 0; background: rgba(0, 48, 96, 0.4); display: none; align-items: center; justify-content: center; padding: 24px; z-index: 10000; backdrop-filter: blur(2px); }
+    .confirm-overlay.visible { display: flex; }
+    .confirm-dialog { width: min(340px, 100%); background: #ffffff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,48,96,0.2); overflow: hidden; border: 1px solid #e0e6ed; animation: modal-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes modal-in { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .confirm-header { background: #003060; color: white; padding: 16px; display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 700; border-bottom: 2px solid #ff6b00; }
+    .confirm-header img { width: 34px; height: auto; object-fit: contain; flex-shrink: 0; }
+    .confirm-header span { line-height: 1; }
+    .confirm-body { padding: 20px 16px; color: #234; font-size: 14px; line-height: 1.5; font-weight: 500; }
+    .confirm-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 0 16px 20px; }
+    .confirm-cancel { background: #f0f4f8; color: #003060; border: 1px solid #d5e0eb; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; }
+    .confirm-cancel:hover { background: #e2e8f0; border-color: #cbd5e0; }
+    .confirm-accept { background: #003060; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 13px; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .confirm-accept:hover { background: #004a94; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+    .confirm-accept.is-danger { background: #dc3545; }
+    .confirm-accept.is-danger:hover { background: #c82333; }
+    .confirm-accept.is-orange { background: #ff6b00; }
+    .confirm-accept.is-orange:hover { background: #e66000; }
+
+    /* ── HISTORIAL ── */
+    .history-header { background: #003060; color: white; padding: 0 20px; min-height: 64px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex-shrink: 0; }
+    .history-title-container { display: flex; align-items: center; margin-left: 15px; }
+    .history-title { font-size: 20px !important; font-family: 'Segoe UI', sans-serif !important; color: #fff !important; font-weight: 700 !important; letter-spacing: 0.3px; margin-left: 12px !important; line-height: 1; }
+    .back-link { font-size: 13px !important; color: #e0e0e0 !important; cursor: pointer; font-family: 'Segoe UI', sans-serif !important; margin-left: 32px !important; text-decoration: none !important; user-select: none; display: flex; align-items: center; gap: 6px; }
+    .back-link:hover { color: #fff !important; }
+    .btn-danger { background: transparent; color: #dc3545; border: 1px solid #dc3545; padding: 7px 18px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 13px; transition: all 0.15s; text-align: center; }
+    .btn-danger:hover { background: rgba(220, 53, 69, 0.08); border-color: #dc3545; }
+    .btn-action-history { background: transparent; color: #0051ba; border: 1px solid #0051ba; padding: 7px 14px; border-radius: 3px; cursor: pointer; font-weight: 700; margin-left: 6px; font-size: 13px; }
+    .btn-action-history:hover { background: rgba(0, 51, 186, 0.08); border-color: #0051ba; }
+    .btn-action-history:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-action-history.active { background: rgba(0, 51, 186, 0.12); color: #0051ba; border-color: #0051ba; }
+    .history-header .btn-action-history,
+    .history-header .btn-danger { color: #ffffff; }
+    .history-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .history-info-bar { background: #060b29; color: #ffffff; padding: 5px 20px; font-size: 13px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-family: 'Segoe UI', sans-serif !important; width: 100%; }
+    .selection-count { min-width: 116px; font-size: 12px; color: #dbe8f6; text-align: right; }
+    .history-content { flex-grow: 1; overflow-y: auto; padding: 18px; background: #E8F0FE; }
+    .history-inner { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; align-items: start; }
+    .history-footer { max-width: 1280px; margin: 18px auto 0; display: flex; justify-content: center; }
+    .history-more-btn { background: transparent; color: #0051ba; border: 1px solid #0051ba; padding: 7px 14px; border-radius: 3px; cursor: pointer; font-weight: 700; font-size: 13px; transition: all 0.15s; }
+    .history-more-btn:hover { background: rgba(0, 51, 186, 0.08); border-color: #0051ba; }
+    .history-more-btn.hidden { display: none; }
+    .item { border: 1px solid #e0e6ed; padding: 10px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border-radius: 6px; display: flex; flex-direction: column; gap: 8px; min-height: 100%; transition: all 0.15s ease; background-clip: padding-box; }
+    .item:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+    .item.selection-mode { cursor: pointer; }
+    .item.selected { border-color: #0032a7; box-shadow: 0 0 0 2px rgba(0, 50, 167, 0.1), 0 2px 6px rgba(0,0,0,0.08); }
+    .item-preview { position: relative; border-radius: 4px; overflow: hidden; background: #e0e6ed; border: 1px solid #e0e6ed; aspect-ratio: 16 / 10; }
+    .item-preview::after { content: "Abrir"; position: absolute; right: 8px; bottom: 8px; background: rgba(3, 40, 125, 0.85); color: #fff; font-size: 10px; font-weight: 600; padding: 4px 7px; border-radius: 3px; pointer-events: none; }
+    .item.selection-mode .item-preview::after { content: "Seleccionar"; }
+    .select-badge { position: absolute; top: 8px; left: 8px; width: 20px; height: 20px; border-radius: 3px; border: 2px solid rgba(255,255,255,0.9); background: rgba(3, 40, 125, 0.8); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; pointer-events: none; }
+    .edited-badge { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 3px; border: 2px solid rgba(255,255,255,0.9); background: #fca311; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; pointer-events: none; }
+    .item.selected .select-badge { background: #0032a7; border-color: #ffffff; }
+    .item-meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .url { font-size: 12px; color: #2455b5; word-break: break-word; font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .date { font-size: 12px; color: #333; line-height: 1.35; }
+    img.imgPreview { width: 100%; height: 100%; display: block; cursor: pointer; object-fit: cover; opacity: 0; transition: opacity 0.3s ease-in; }
+    img.imgPreview[src] { opacity: 1; }
+    .lazy-img { background: #f0f2f5; }
+    .item-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: auto; }
+    .item-actions button { margin: 0; padding: 6px 10px; border: 1px solid #e0e6ed; border-radius: 3px; cursor: pointer; font-weight: 500; font-size: 12px; background: transparent; transition: all 0.15s; }
+    .copyBtn { background: transparent; color: #28a745; border: 1px solid #d4edda; }
+    .copyBtn:hover { background: rgba(40, 167, 69, 0.05); border-color: #a8ddb8; }
+    .dlBtn { background: transparent; color: #0032a7; border: 1px solid #cce1f5; }
+    .dlBtn:hover { background: rgba(0, 50, 167, 0.05); border-color: #99c3f0; }
+    .delBtn { background: transparent; color: #dc3545; border: 1px solid #f5c6cc; }
+    .delBtn:hover { background: rgba(220, 53, 69, 0.05); border-color: #ed919e; }
+    .empty { color: #888; margin: 40px; text-align: center; }
+    @media (max-width: 720px) {
+      .history-content { padding: 16px; }
+      .history-inner { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+    }
+
+    /* ══════════════════════════════════════════
+       EDITOR v3.6.5 (Fabric.js)
+    ══════════════════════════════════════════ */
+    .editor-header {
+      background: #003060;
+      color: white;
+      padding: 5px 20px;
+      min-height: 64px;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      flex-shrink: 0;
+      gap: 12px;
+      flex-wrap: wrap; /* Permite que se ajuste en pantallas pequeñas */
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .editor-header * { box-sizing: border-box; }
+    .editor-header > * { flex-shrink: 0; }
+    .editor-brand { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-right: 8px; margin-left: 15px; }
+    .editor-brand .brand-logo { height: 42px !important; width: auto; }
+    .editor-brand .brand-text { display: inline-block !important; font-size: 20px !important; font-family: 'Segoe UI', sans-serif !important; color: #fff !important; font-weight: 700 !important; letter-spacing: 0.3px !important; margin-left: 12px !important; line-height: 1 !important; }
+    .editor-brand span { font-size: 16px !important; font-family: 'Segoe UI', sans-serif !important; color: #fff !important; font-weight: 700 !important; letter-spacing: 0.2px; white-space: nowrap; line-height: 1; }
+
+    /* Toolbar principal */
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 6px;
+      padding: 2px 4px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .tool-sep { width: 1px; height: 18px; background: rgba(0, 0, 0, 0.4); margin: 0 4px; }
+    .tool-btn {
+      background: transparent;
+      border: 2px solid transparent;
+      color: #ffffff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .tool-btn svg { width: 14px; height: 14px; color: #fff; }
+    .tool-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #fff; }
+    .tool-btn.active { background: #fca311; border-color: transparent; color: #fff; }
+    .tool-btn:disabled { opacity: 0.3; cursor: not-allowed !important; }
+
+    /* Opciones color/grosor */
+    .editor-options { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .color-swatch { 
+      width: 18px; height: 18px; 
+      border-radius: 50%; 
+      border: 1px solid rgba(255,255,255,0.3); 
+      cursor: pointer; 
+      transition: all 0.12s; 
+      flex-shrink: 0; 
+      position: relative;
+    }
+    .color-swatch:hover {
+      transform: scale(1.1);
+    }
+    .color-swatch.active { 
+      box-shadow: 0 0 0 2px #ffffff;
+      border-color: transparent;
+    }
+
+    /* ── COLOR PICKER DROPDOWN ── */
+    .color-picker-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .current-color-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid white;
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+      transition: transform 0.15s;
+    }
+    .current-color-btn:hover {
+      transform: scale(1.1);
+    }
+    .color-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 10px;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      z-index: 1100;
+      visibility: hidden;
+      opacity: 0;
+      transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+      transform: translateY(-5px);
+      border: 1px solid #e0e6ed;
+    }
+    .color-menu.active {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .color-menu .color-swatch {
+      width: 20px;
+      height: 20px;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+    }
+    .color-menu .color-swatch.active {
+      box-shadow: 0 0 0 2px #003060;
+    }
+    .size-select { 
+      background: #000c24; 
+      color: #fff; 
+      border: 1px solid rgba(255,255,255,0.15); 
+      border-radius: 3px; 
+      padding: 2px 4px; 
+      font-size: 11px; 
+      cursor: pointer; 
+      text-align: center;
+      font-weight: 700;
+      height: 24px;
+      outline: none;
+    }
+    .opt-label { 
+      color: #ffffff; 
+      font-size: 10px; 
+      font-weight: 700; 
+      text-transform: uppercase; 
+      letter-spacing: 0.4px; 
+    }
+
+    /* Acciones guardar/cancelar */
+    .editor-actions { 
+      display: flex; 
+      flex-direction: row; 
+      flex-wrap: nowrap; 
+      align-items: center; 
+      gap: 10px; 
+      flex-shrink: 0; 
+      margin-left: auto;
+      background: rgba(0,0,0,0.15);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .btn-editor-save, .btn-editor-cancel { 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center; 
+      width: auto; 
+    }
+    .btn-editor-save { 
+      background: transparent; 
+      color: #32d74b; 
+      border: 1px solid #32d74b; 
+      padding: 6px 16px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-weight: 700; 
+      font-size: 13px; 
+      transition: all 0.15s; 
+      white-space: nowrap; 
+    }
+    .btn-editor-save:hover { background: rgba(50, 215, 75, 0.1); }
+    .btn-editor-cancel { 
+      background: transparent; 
+      color: #ffffff; 
+      border: 1px solid #ffffff; 
+      padding: 6px 16px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-weight: 700; 
+      font-size: 13px; 
+      transition: all 0.15s; 
+      white-space: nowrap; 
+    }
+    .btn-editor-cancel:hover { background: rgba(255, 255, 255, 0.1); }
+
+    /* Zoom group */
+    .zoom-group {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 6px;
+      padding: 2px 4px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .zoom-btn {
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      width: 24px; height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s;
+      padding: 0; line-height: 1;
+    }
+    .zoom-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); color: #fff; }
+    .zoom-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    #zoom-label { color: #ffffff; font-size: 11px; font-weight: 700; min-width: 38px; text-align: center; letter-spacing: 0.2px; }
+    .zoom-reset-btn { background: #000c24; border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; font-weight: 700; transition: all 0.12s; white-space: nowrap; height: 22px; }
+    .zoom-reset-btn:hover { background: rgba(255,255,255,0.1); }
+
+    /* Canvas area */
+    .editor-canvas-area {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      background: #f8f9fa;
+      padding: 20px;
+      position: relative;
+    }
+    #editorCanvas {
+      display: block;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      user-select: none;
+      cursor: default;
+      transform-origin: top center;
+    }
+
+    /* Crop overlay */
+    #cropOverlay {
+      position: absolute;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+    }
+    #cropOverlay .crop-shade { position: absolute; background: rgba(0,0,0,0.8); }
+    #cropOverlay .crop-border {
+      position: absolute;
+      border: 2px solid #fca311;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+      pointer-events: auto;
+      cursor: move;
+    }
+    #cropOverlay .crop-handle {
+      position: absolute;
+      width: 12px; height: 12px;
+      background: #fca311;
+      border: 2px solid #fff;
+      border-radius: 2px;
+      pointer-events: auto;
+      z-index: 11;
+    }
+
+    /* ── QUICK GUIDE MODAL ── */
+    #quickGuideOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20000;
+      backdrop-filter: blur(5px);
+      padding: 20px;
+    }
+    #quickGuideOverlay.active { display: flex; }
+    
+    .guide-modal-container {
+      background: #ffffff;
+      width: 90%;
+      max-width: 650px;
+      height: 90vh; 
+      max-height: 96vh;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      animation: modalSlideUp 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+      overflow: hidden;
+    }
+    
+    @keyframes modalSlideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .guide-modal-header {
+      background: #003060;
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #ff6b00;
+      flex-shrink: 0;
+    }
+    .guide-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .guide-header-logo {
+      height: 24px;
+      width: auto;
+    }
+    .guide-modal-header h2 { margin: 0; font-size: 16px; font-weight: 700; color: #fff; }
+    .guide-modal-close {
+      background: #ff4b2b;
+      border: 2px solid white;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .guide-modal-close:hover { 
+      background: #ff2a00; 
+      transform: scale(1.1); 
+    }
+    
+    .guide-modal-body {
+      padding: 0;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+    .guide-modal-body iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+    .btn-help-circle {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.4);
+      background: transparent;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+      margin-left: 15px;
+      transition: all 0.2s;
+    }
+    .btn-help-circle:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+
+    /* Empty State styles */
+    #empty-state {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start; /* Move to top */
+      color: #666;
+      text-align: center;
+      background-image: url('Media/Flujo.png');
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 5;
+    }
+    #empty-state::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.85);
+      z-index: 1;
+    }
+    #empty-state.hidden { display: none !important; }
+    .empty-content {
+      position: relative;
+      z-index: 2;
+      animation: fadeIn 0.4s ease-out;
+      margin-top: 40px; /* Spacing from top */
+    }
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.8;
+    }
+    #empty-state h2 {
+      font-size: 28px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+      font-weight: 700;
+    }
+    #empty-state p {
+      font-size: 18px;
+      color: #444;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dark mode adjustments for empty state */
+    @media (prefers-color-scheme: dark) {
+      #empty-state::before {
+        background: rgba(30, 30, 30, 0.88);
+      }
+      #empty-state h2 { color: #ffffff; }
+      #empty-state p { color: #cccccc; }
+    }
+
+    /* ── TOOLTIPS (Sugerencias) ── */
+    [data-tooltip] {
+      position: relative;
+    }
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: -35px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      background: rgba(0, 48, 96, 0.95);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 10000;
+      pointer-events: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    [data-tooltip]:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) scale(1);
+    }
+
+    /* ── SKELETON LOADING ── */
+    .skeleton {
+      background: #eef2f7;
+      background: linear-gradient(110deg, #eef2f7 8%, #f5f8fc 18%, #eef2f7 33%);
+      border-radius: 4px;
+      background-size: 200% 100%;
+      animation: 1.5s shine linear infinite;
+    }
+    @keyframes shine {
+      to { background-position-x: -200%; }
+    }
+    .skeleton-image { width: 100%; height: 100%; }
+    .skeleton-text { height: 12px; margin-bottom: 8px; border-radius: 2px; }
+    #skeleton-loader {
+      position: absolute;
+      inset: 0;
+      background: white;
+      z-index: 100;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      min-width: 600px;
+      min-height: 500px;
+      border-radius: 6px;
+    }
+    #skeleton-loader.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .skeleton-header { flex-shrink: 0; }
+    .skeleton-body { flex-grow: 1; min-height: 400px; }
+    .skeleton-footer { flex-shrink: 0; }
+
+    /* Dark mode for skeleton */
+    @media (prefers-color-scheme: dark) {
+      .skeleton {
+        background: #2a2a2a;
+        background: linear-gradient(110deg, #2a2a2a 8%, #333333 18%, #2a2a2a 33%);
+      }
+      #skeleton-loader {
+        background: #1a1a1a;
+      }
+    }
+
+    /* ── NOTIFICACIONES (TOAST) ── */
+    #toast-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast {
+      background: #003060;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 14px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+                 toastOut 0.3s ease forwards 2.5s;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+
+    /* ── MEJORAS EN HISTORIAL ── */
+    .history-item {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .history-item:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    }
+
+    /* ── MORE TOOLS DROPDOWN ── */
+    .more-tools-dropdown {
+      position: absolute;
+      top: 64px;
+      right: 20px;
+      background: #003060;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+      display: none;
+      flex-direction: column;
+      z-index: 1000;
+      padding: 8px;
+      min-width: 180px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .more-tools-dropdown.active {
+      display: flex;
+    }
+    .more-tools-dropdown .editor-toolbar,
+    .more-tools-dropdown .editor-options,
+    .more-tools-dropdown .zoom-group,
+    .more-tools-dropdown .history-actions,
+    .more-tools-dropdown #viewerActionsGroup {
+      background: transparent;
+      border: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 5px;
+      width: 100%;
+      display: flex; /* Asegurar que se vea como flex en vertical */
+    }
+    .more-tools-dropdown .tool-sep {
+      width: 100%;
+      height: 1px;
+      margin: 8px 0;
+      background: rgba(255,255,255,0.1);
+    }
+    .more-tools-dropdown .tool-btn,
+    .more-tools-dropdown .zoom-group > *,
+    .more-tools-dropdown .btn-action,
+    .more-tools-dropdown .btn-edit,
+    .more-tools-dropdown .btn-danger,
+    .more-tools-dropdown .btn-action-history {
+      justify-content: flex-start;
+      width: 100%;
+      padding: 10px 15px;
+      margin: 0 !important;
+      text-align: left;
+    }
+    .more-tools-dropdown .selection-count {
+      color: #ffc440;
+      padding: 8px 15px;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 8px;
+    }
+    .more-tools-dropdown .opt-label {
+      padding: 4px 12px;
+      opacity: 0.7;
+    }
+    .more-tools-dropdown .editor-options {
+      padding: 8px 0;
+    }
+    .more-tools-dropdown .color-picker-container {
+      width: 100%;
+    }
+    .more-tools-dropdown #colorMenu {
+      position: static;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      padding: 8px 12px;
+      visibility: visible;
+      opacity: 1;
+      transform: none;
+      box-shadow: none;
+      background: transparent;
+      border: none;
+      width: 100%;
+    }
+    .more-tools-dropdown #currentColorBtn {
+      display: none;
+    }
+
+    /* Estilos para el botón "Más herramientas" */
+    #more-tools-btn {
+      background: #fca311;
+      border: none;
+      color: white;
+      font-weight: 700;
+      padding: 8px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    #more-tools-btn:hover { background: #e59200; }
+
+  </style>
+</head>
+<body>
+
+  <!-- ══ VISOR ══ -->
+  <div id="viewer-view" class="view-visible">
+    <div class="header-bar">
+      <div class="brand-container">
+        <img src="Media/SQA.png" alt="SQA Logo" class="brand-logo">
+        <span class="brand-text">Evidencias</span>
+        <span class="history-link" id="historyLink" data-tooltip="Ver todas las capturas guardadas">&#128214; Ver historial de capturas</span>
+        <button id="viewerHelpBtn" class="btn-help-circle" data-tooltip="Guía de ayuda del visor">?</button>
+      </div>
+      <div style="display:flex;align-items:center;" id="viewerActionsGroup">
+        <button id="prevCaptureBtn" class="btn-action" disabled data-tooltip="Imagen anterior">Anterior</button>
+        <button id="nextCaptureBtn" class="btn-action" disabled data-tooltip="Siguiente imagen">Siguiente</button>
+        <button id="editBtn" class="btn-edit" disabled data-tooltip="Editar esta imagen (Recortar, flechas, etc.)">Editar</button>
+        <button id="copyBtn" class="btn-action" disabled data-tooltip="Copiar imagen al portapapeles (Ctrl+C)">Copiar</button>
+        <button id="downloadBtn" class="btn-action" disabled data-tooltip="Descargar imagen en formato PNG">Descargar</button>
+        <button id="deleteCurrentBtn" class="btn-danger" style="margin-left:10px;" disabled data-tooltip="Eliminar esta captura permanentemente">Borrar</button>
+      </div>
+      <button id="viewer-more-btn" class="tool-btn" style="background:#fca311; display:none;">Acciones ▼</button>
+      <div id="viewer-more-dropdown" class="more-tools-dropdown"></div>
+    </div>
+	<div id="viewer-info-bar">
+    <span id="viewerStatus">Esc (Zoom) | Ctrl+C (Copiar)</span>
+</div>
+    <div class="main-content">
+      <div id="empty-state">
+          <div class="empty-content">
+              <h2>Sin evidencias</h2>
+              <p>Captura una pantalla para comenzar.</p>
+          </div>
+      </div>
+      <div class="img-container">
+        <!-- Skeleton Loader (Improved) -->
+        <div id="skeleton-loader">
+          <div class="skeleton-header">
+            <div class="skeleton skeleton-text" style="width: 60%"></div>
+            <div class="skeleton skeleton-text" style="width: 35%"></div>
+          </div>
+          <div class="skeleton-body">
+            <div class="skeleton skeleton-image" style="height: 450px;"></div>
+          </div>
+          <div class="skeleton-footer">
+            <div class="skeleton skeleton-text" style="width: 80%"></div>
+          </div>
+        </div>
+
+        <img id="screenshot" alt="">
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HISTORIAL ══ -->
+  <div id="history-view" class="view-hidden">
+    <div class="history-header">
+      <div class="history-title-container">
+        <img src="Media/SQA.png" alt="SQA Logo" class="brand-logo" style="height:42px;">
+        <span class="history-title">Evidencias</span>
+        <span class="back-link" id="backBtn" data-tooltip="Volver al visor de evidencias">&#128247; Volver al visor de evidencias</span>
+        <button id="historyHelpBtn" class="btn-help-circle" data-tooltip="Ayuda sobre el historial">?</button>
+      </div>
+      <div class="history-actions" id="historyActionsGroup">
+        <span class="selection-count" id="selectionCount">0 seleccionadas</span>
+        <button class="btn-action-history" id="toggleSelectionBtn" disabled data-tooltip="Activar modo selección por clic">Seleccionar</button>
+        <button class="btn-action-history" id="copySelectedBtn" disabled data-tooltip="Copiar las imágenes seleccionadas">Copiar seleccionadas</button>
+        <button class="btn-action-history" id="downloadSelectedBtn" disabled data-tooltip="Descargar las imágenes seleccionadas (ZIP)">Descargar seleccionadas</button>
+        <button class="btn-danger" id="deleteSelectedBtn" disabled data-tooltip="Borrar permanentemente las seleccionadas">Borrar seleccionadas</button>
+        <button class="btn-action-history" id="downloadAllBtn" disabled data-tooltip="Descargar todo el historial en un archivo ZIP">Descargar Todo</button>
+        <button class="btn-danger" id="deleteAllBtn" disabled data-tooltip="Borrar TODO el historial permanentemente">Borrar Todo</button>
+      </div>
+      <button id="history-more-btn" class="tool-btn" style="background:#fca311; display:none; margin-right: 20px;">Acciones ▼</button>
+      <div id="history-more-dropdown" class="more-tools-dropdown"></div>
+    </div>
+    <div class="history-info-bar">
+      <span>Gestión de evidencias guardadas localmente | Haz clic en una captura para seleccionarla</span>
+    </div>
+    <div class="history-content">
+      <div class="history-inner" id="historialContainer"></div>
+      <div class="history-footer">
+        <button id="historyLoadMoreBtn" class="history-more-btn hidden">Cargar más capturas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ EDITOR v3.6.5 ══ -->
+  <div id="editor-view" class="view-hidden">
+    <div class="editor-header">
+
+      <div class="editor-brand">
+        <img src="Media/SQA.png" alt="SQA" class="brand-logo">
+        <span class="brand-text">Editor</span>
+        <button id="editorHelpBtn" class="btn-help-circle" data-tooltip="Ayuda de herramientas de edición">?</button>
+      </div>
+
+      <!-- Herramientas de dibujo -->
+      <div class="editor-toolbar" id="drawToolbar">
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-arrow" data-tooltip="Dibujar flecha (Tecla F)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2l12 5-5 2-2 5z"/></svg>
+          Flecha
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-rect" data-tooltip="Dibujar cuadro (Tecla C)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="12" height="12" rx="1.5"/></svg>
+          Cuadro
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-text" data-tooltip="Insertar texto (Tecla T)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3h12v2H9v8H7V5H2z"/></svg>
+          Texto
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-highlight" data-tooltip="Resaltar área (Tecla H)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="9" width="10" height="4" rx="1" opacity="0.6"/><path d="M5 2h6l2 7H3z"/></svg>
+          Resaltador
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-blur" data-tooltip="Censurar/Ocultar área (Tecla B)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" opacity="0.8"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2.5" opacity="0.5"/><circle cx="8" cy="8" r="1"/></svg>
+          Blur
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-crop" data-tooltip="Recortar imagen (Tecla R)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4 1v3H1v2h3v5h5v3h2v-3h3v-2h-3V4H7V1H4zm1 5h4v4H5V6z" opacity="0.9"/></svg>
+          Recortar
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-btn" id="tool-undo" data-tooltip="Deshacer último cambio (Ctrl+Z)" disabled>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 5.5H10a3.5 3.5 0 0 1 0 7H6V11h4a1.5 1.5 0 0 0 0-3H4.5V10l-3-3 3-3v1.5z"/></svg>
+          Deshacer
+        </button>
+        <button class="tool-btn" id="tool-redo" data-tooltip="Rehacer cambio (Ctrl+Y)" disabled>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M11.5 5.5H6a3.5 3.5 0 0 0 0 7h4V11H6a1.5 1.5 0 0 1 0-3h5.5V10l3-3-3-3v1.5z"/></svg>
+          Rehacer
+        </button>
+      </div>
+
+      <!-- Opciones -->
+      <div class="editor-options" id="editorOptionsGroup">
+        <span class="opt-label">Color:</span>
+        <div class="color-picker-container" id="colorPickerContainer">
+          <div id="currentColorBtn" class="current-color-btn" style="background: #FF3B30;" data-tooltip="Seleccionar color"></div>
+          <div class="color-menu" id="colorMenu">
+            <div class="color-swatch active" data-color="#FF3B30" style="background:#FF3B30;"></div>
+            <div class="color-swatch" data-color="#003060" style="background:#003060;"></div>
+            <div class="color-swatch" data-color="#34C759" style="background:#34C759;"></div>
+            <div class="color-swatch" data-color="#00FFFF" style="background:#00FFFF;"></div>
+            <div class="color-swatch" data-color="#fca311" style="background:#fca311;"></div>
+            <div class="color-swatch" data-color="#ffffff" style="background:#ffffff;"></div>
+            <div class="color-swatch" data-color="#000000" style="background:#000000;"></div>
+          </div>
+        </div>
+        
+        <div class="tool-sep"></div>
+        <span class="opt-label">Grosor:</span>
+        <select class="size-select" id="strokeSize">
+          <option value="2">Fino</option>
+          <option value="4" selected>Normal</option>
+          <option value="7">Grueso</option>
+          <option value="11">Extra</option>
+        </select>
+        <div class="tool-sep"></div>
+        <span class="opt-label">Fuente:</span>
+        <input type="number" id="fontSizeInput" value="50" min="10" max="200" style="width:50px;" class="size-select">
+      </div>
+
+      <!-- Zoom -->
+      <div class="zoom-group" id="editorZoomGroup">
+        <button class="zoom-btn" id="zoom-out" data-tooltip="Disminuir zoom">−</button>
+        <span id="zoom-label">50%</span>
+        <button class="zoom-btn" id="zoom-in" data-tooltip="Aumentar zoom">+</button>
+        <button class="zoom-reset-btn" id="zoom-reset" data-tooltip="Ver tamaño real (100%)">100%</button>
+      </div>
+
+      <button id="more-tools-btn" class="tool-btn">Más herramientas ▼</button>
+      <div id="more-tools-dropdown" class="more-tools-dropdown"></div>
+
+      <!-- Guardar -->
+      <div class="tool-sep" id="actionsSep"></div>
+      <div class="editor-actions">
+        <button class="btn-editor-cancel" id="editorCancelBtn" data-tooltip="Descartar cambios">Cancelar</button>
+        <button class="btn-editor-save"   id="editorSaveBtn"   data-tooltip="Guardar cambios permanentemente">Guardar</button>
+      </div>
+    </div>
+
+    <div id="editor-info-bar" style="background: #060b29; color: #fff; padding: 5px 20px; font-size: 13px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);">
+      <span id="editorStatus">Selecciona una herramienta para comenzar | Ctrl+Rueda = Zoom</span>
+    </div>
+
+    <!-- Canvas area -->
+    <div class="editor-canvas-area" id="editorCanvasArea">
+      <canvas id="editorCanvas"></canvas>
+      <div id="cropOverlay">
+        <div class="crop-shade" id="cs-top"></div>
+        <div class="crop-shade" id="cs-bottom"></div>
+        <div class="crop-shade" id="cs-left"></div>
+        <div class="crop-shade" id="cs-right"></div>
+        <div class="crop-border" id="cb">
+          <div class="crop-handle" id="ch-tl" style="top:-6px;left:-6px;cursor:nwse-resize;"></div>
+          <div class="crop-handle" id="ch-tr" style="top:-6px;right:-6px;cursor:nesw-resize;"></div>
+          <div class="crop-handle" id="ch-bl" style="bottom:-6px;left:-6px;cursor:nesw-resize;"></div>
+          <div class="crop-handle" id="ch-br" style="bottom:-6px;right:-6px;cursor:nwse-resize;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- ══ GUÍA DE INICIO RÁPIDO ══ -->
+  <div id="quickGuideOverlay">
+    <div class="guide-modal-container">
+      <div class="guide-modal-header">
+        <div class="guide-header-left">
+          <img src="Media/SQA.png" alt="SQA Logo" class="guide-header-logo">
+          <h2>Guía de Usuario - Evidencias SQA</h2>
+        </div>
+        <button class="guide-modal-close" id="closeQuickGuideBtn">&times;</button>
+      </div>
+      <div class="guide-modal-body">
+        <iframe src="guide.html" id="guideIframe"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div id="drop-zone-overlay">
+    <div class="drop-message">
+      <span style="font-size: 24px;">📥</span>
+      Soltar imagen para adjuntar evidencia
+    </div>
+  </div>
+  <div id="confirmOverlay" class="confirm-overlay" aria-hidden="true">
+    <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+      <div class="confirm-header">
+        <img src="Media/SQA.png" alt="SQA">
+        <span id="confirmTitle">Confirmar acción</span>
+      </div>
+      <div id="confirmMessage" class="confirm-body"></div>
+      <div class="confirm-actions">
+        <button id="confirmCancelBtn" class="confirm-cancel">Cancelar</button>
+        <button id="confirmAcceptBtn" class="confirm-accept">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="fabric.min.js"></script>
+  <script src="jszip.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="clipboard-init.js"></script>
+</body>
+</html>

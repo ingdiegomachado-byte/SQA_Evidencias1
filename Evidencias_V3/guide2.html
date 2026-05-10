@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Guía de Usuario - Evidencias SQA</title>
+ <style>
+ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.4; color: #333; max-width: 750px; margin: 5px auto; padding: 10px 10px 10px 40px; background-color: #E8F0FE; }
+ h1 { color: #003366; border-bottom: 2px solid #003366; padding-bottom: 5px; margin-top: 5px; display: flex; align-items: center; }
+ h2 { color: #0055aa; margin-top: 15px; margin-bottom: 10px; display: flex; align-items: center; border-left: 4px solid #0055aa; padding-left: 10px; }
+ h3 { color: #0055aa; margin-top: 15px; margin-bottom: 10px; display: flex; align-items: center; border-left: 4px solid #0055aa; padding-left: 10px; }
+ .icon { width: 28px; height: 28px; margin-right: 12px; vertical-align: middle; }
+ ul { list-style-type: none; padding: 0; }
+ li { margin-bottom: 8px; padding-left: 5px; }
+ kbd { background-color: #eee; border-radius: 3px; border: 1px solid #b4b4b4; box-shadow: 0 1px 1px rgba(0,0,0,.2); color: #333; font-family: sans-serif; font-weight: bold; padding: 2px 6px; }
+ .shortcut { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; border: 1px solid #ddd; }
+ .note { background: #e7f3fe; border-left: 6px solid #2196F3; padding: 15px; margin: 25px 0; border-radius: 0 5px 5px 0; }
+ .sub-list { margin-top: 10px; margin-left: 20px; border-left: 1px dashed #ccc; padding-left: 15px; }
+ </style>
+</head>
+<body>
+
+ <h1>
+   <img src="Media/editar.png" alt="Icono editar" class="icon">
+   Editor de Evidencias QA
+ </h1>
+
+ <h2>Herramientas de Anotación</h2>
+
+ <ul>
+   <li>
+     <img src="Media/Atajos.png" alt="Icono Atajos" class="icon">
+     <strong>Atajos:</strong>
+      Usa las teclas para activar el elemento de edición.
+   </li>
+     <ul class="sub-list">
+	   <li><strong>(F) Flecha:</strong> Señala elementos específicos.</li>
+	   <li><strong>(C) Cuadro:</strong> Enmarca errores o secciones.</li>
+	   <li><strong>(T) Texto</strong> Añade comentarios (Fuente ajustable)</li>
+       <li><strong>(H) Resaltador</strong> Enfatiza áreas con transparencia.</li>
+	   <li><strong>(B) Blur</strong> Oculta datos sensibles o personales.</li>
+	   <li><strong>(R) Recortar</strong> Ajusta el tamaño de la evidencia.</li>
+     </ul>
+   </li>
+
+ <h2>Personalización y Control</h2>
+     
+	   <li><strong>Color:</strong> Selecciona el tono de las herramientas (Rojo, Verde, Azul, etc.).</li>
+       <li><strong>Grosor:</strong> Ajusta el ancho de las líneas y bordes.</li>
+     
+   </li>
+ <ul>
+  
+ <li>
+     <img src="Media/navegacion.png" alt="Icono Navegación" class="icon">
+     <strong>Historial de Cambios:</strong>
+        </li>
+     <ul class="sub-list">
+	   <li><strong>Deshacer / Rehacer:</strong> Permite revertir o aplicar nuevamente las últimas acciones.</li>  
+     </ul>
+   </li>
+
+	<h2>Navegación y Zoom</h2>
+    <ul>
+        
+        <li><strong>Cancelar:</strong> Descarta los cambios y cierra el editor.</li>
+        <li><strong>Guardar:</strong> Aplica todas las anotaciones y finaliza la evidencia.</li>
+		<li><span class="shortcut">Ctrl + Rueda</span> : Aumentar o disminuir el zoom de la captura.</li>
+    </ul>
+
+    <div class="note">
+        <strong>Consejo de QA:</strong> Utiliza siempre la herramienta <strong>Blur</strong> para proteger información confidencial (nombres, cuentas, contraseñas) que aparezca en la captura.
+    </div>
+
+</body>
+</html>

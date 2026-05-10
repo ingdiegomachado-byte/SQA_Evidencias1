@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Evidencias</title>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      width: 220px;
+      font-family: "Segoe UI", sans-serif;
+      background: #f4f7fa;
+      color: #16324f;
+    }
+    .header {
+      background: #003060;
+      color: white;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      border-bottom: 3px solid #ff6b00;
+    }
+    .header img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .panel {
+      padding: 16px 14px;
+    }
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .menu-btn {
+      border: 1px solid #d1d9e2;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: white;
+      color: #003060;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .menu-btn:hover:not(:disabled) {
+      background: #003060;
+      color: white;
+      border-color: #003060;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 12px rgba(0,48,96,0.25);
+    }
+    .menu-btn:hover:not(:disabled) svg {
+      color: #ff6b00;
+    }
+    .menu-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .menu-btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      background: #f8f9fa;
+    }
+    .icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .icon svg {
+      width: 100%;
+      height: 100%;
+    }
+    #toast { 
+      position: fixed; 
+      top: 5px; 
+      left: 10px; 
+      right: 10px;
+      background: #003060; 
+      color: white; 
+      padding: 8px 12px; 
+      border-radius: 8px; 
+      font-weight: 600; 
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+      z-index: 9999; 
+      opacity: 0; 
+      pointer-events: none; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transform: translateY(-100px);
+      border-left: 4px solid #ff6b00;
+    }
+    #toast.show { 
+      transform: translateY(0); 
+      opacity: 1; 
+    }
+    #toast.error {
+      background: #dc3545;
+      border-left-color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+  <div class="header">
+    <img src="Media/SQA.png" alt="SQA Logo">
+    <h1>Evidencias</h1>
+  </div>
+
+  <div id="menuView" class="panel stack">
+    <button id="btnCaptureAll" class="menu-btn">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><circle cx="12" cy="15" r="3"></circle><path d="m11 15 1 1 2-2"></path><path d="M12 12v1"></path></svg>
+      </span>
+      <span>Toda la página</span>
+    </button>
+    <button id="btnCaptureVisible" class="menu-btn">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line><path d="m9 10 2 2 4-4"></path></svg>
+      </span>
+      <span>Area visible</span>
+    </button>
+    <div style="height: 4px; border-bottom: 1px solid #d1d9e2; margin: 4px 0;"></div>
+    <button id="btnOpenViewer" class="menu-btn" style="background: #f0f4f8; border-color: #c0ccd9;">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      </span>
+      <span>Abrir Visor</span>
+    </button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

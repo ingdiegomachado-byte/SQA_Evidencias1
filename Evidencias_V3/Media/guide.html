@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Usuario - Evidencias SQA</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 850px; margin: 20px auto; padding: 20px; }
+        h1 { color: #003366; border-bottom: 2px solid #003366; padding-bottom: 10px; display: flex; align-items: center; }
+        h2 { color: #0055aa; margin-top: 30px; display: flex; align-items: center; border-left: 4px solid #0055aa; padding-left: 10px; }
+        
+        .icon { width: 32px; height: 32px; margin-right: 12px; vertical-align: middle; }
+        
+        ul { list-style-type: none; padding: 0; }
+        li { margin-bottom: 12px; padding-left: 5px; }
+        
+        kbd { background-color: #eee; border-radius: 3px; border: 1px solid #b4b4b4; box-shadow: 0 1px 1px rgba(0,0,0,.2); color: #333; font-family: sans-serif; font-weight: bold; padding: 2px 6px; }
+        .shortcut { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; border: 1px solid #ddd; }
+        
+        .note { background: #e7f3fe; border-left: 6px solid #2196F3; padding: 15px; margin: 25px 0; border-radius: 0 5px 5px 0; }
+        .sub-list { margin-top: 10px; margin-left: 20px; border-left: 1px dashed #ccc; padding-left: 15px; }
+    </style>
+</head>
+<body>
+
+    <h1>
+        <img src="media/interfaz.png" alt="Icono Interfaz" class="icon">
+        Visor de Capturas
+    </h1>
+    
+    <h2>Controles Superiores</h2>
+    <ul>
+        <li><strong>Ver historial de capturas:</strong> Permite visualizar el registro de imágenes tomadas previamente.</li>
+        
+        <li>
+            <img src="media/navegacion.png" alt="Icono Navegación" class="icon">
+            <strong>Navegación:</strong>
+            <ul class="sub-list">
+                <li><strong>Desplazamiento Secuencial:</strong> Usa los botones <strong>Anterior</strong> y <strong>Siguiente</strong> en la interfaz.</li>
+                <li><strong>Salto al Final:</strong> Presiona <kbd>↑</kbd> (Flecha Arriba) para ver la <strong>última captura</strong> realizada.</li>
+                <li><strong>Salto al Inicio:</strong> Presiona <kbd>↓</kbd> (Flecha Abajo) para volver a la <strong>primera captura</strong>.</li>
+            </ul>
+        </li>
+		<img src="media/Editar.png" alt="Icono Navegación" class="icon">
+        <li><strong>Acciones de Imagen:</strong>
+            <ul class="sub-list">
+                <li><strong>Editar:</strong> Activa herramientas para marcar o resaltar áreas en la imagen.</li>
+                <li><strong>Copiar:</strong> Envía la imagen actual directamente al portapapeles.</li>
+                <li><strong>Guardar:</strong> Confirma y almacena la evidencia actual.</li>
+                <li><strong>Borrar:</strong> Elimina la captura seleccionada de la sesión.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>
+        <img src="media/Atajos.png" alt="Icono Atajos" class="icon">
+        Atajos de Teclado
+    </h2>
+    <ul>
+        <li><span class="shortcut">Esc</span> : Salir de la vista de zoom o cerrar visor.</li>
+        <li><span class="shortcut">Ctrl + C</span> : Copiar la evidencia rápidamente.</li>
+    </ul>
+
+    <div class="note">
+        <strong>Estado Inicial:</strong> Si no se han realizado capturas, el visor mostrará el mensaje <em>"Sin evidencias"</em>. Inicie una captura de pantalla completa o selección para comenzar.
+    </div>
+
+</body>
+</html>

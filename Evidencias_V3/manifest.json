@@ -1,0 +1,77 @@
+{
+  "manifest_version": 3,
+  "name": "Evidencias QA",
+  "version": "3.8.0",
+  "description": "Captura, edición y archivos adjuntos (clipboard/drag) para evidencias QA.",
+  "icons": {
+    "16": "Media/icon16.png",
+    "48": "Media/icon48.png",
+    "128": "Media/icon128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting",
+    "clipboardWrite",
+    "storage",
+    "unlimitedStorage"
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "evidencias-sqa@sqa.com.co",
+      "strict_min_version": "121.0"
+    }
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Capturar Evidencias SQA",
+    "default_icon": {
+      "16": "Media/icon16.png",
+      "48": "Media/icon48.png",
+      "128": "Media/icon128.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "description": "Ver visor"
+    },
+    "capture-all": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Capturar toda la página"
+    },
+    "capture-visible": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+W",
+        "mac": "Command+Shift+X"
+      },
+      "description": "Capturar parte visible"
+    },
+    "open-viewer": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+V",
+        "mac": "Command+Shift+V"
+      },
+      "description": "Abrir visor de evidencias"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "Media/SQA.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
